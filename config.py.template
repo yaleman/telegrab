@@ -1,0 +1,10 @@
+# config.py
+
+
+# generate a session id using something like `openssl rand -hex 32` - keeping it stable means you don't have to log in each time
+session_id = "asdfasdfasdfasdfasdf"
+
+# get the API key here: https://core.telegram.org/api/obtaining_api_id
+api_id = ""
+api_hash = ""
+app_title = short_name = "download"
