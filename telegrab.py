@@ -19,10 +19,30 @@ def download_callback(recvbytes: int, total: int):
     status = round(100 * (recvbytes / total), 2)
     print(f"Downloading {total} bytes - {status}%")
 
+def select_channel(channel_name: str, telegram_client: TelegramClient, debug: bool=False, list_chats: bool=False):
+    """ selects a dialog by name """
+    selected_chat = False
+
+    for d in telegram_client.iter_dialogs(archived=False):
+        if list_chats:
+            print(d.name)
+        if debug:
+            print(json.dumps(d.entity.to_dict(), default=str, indent=4))
+        # if d.entity.title == 'vlada_661':
+        if hasattr(d.entity, "title"):
+            if d.entity.title == channel_name:
+                selected_chat = d
+                break
+        else:
+            if f"{d.entity.first_name} {d.entity.last_name}" == channel_name:
+                selected_chat = d
+                break
+    return selected_chat
+
 
 @click.option("-d", "--debug", is_flag=True, default=False)
 @click.option("-l", "--list-chats", type=bool, is_flag=True, default=False)
-@click.option("--channel")
+@click.option("--channel", default="")
 @click.command()
 def cli(channel: str, list_chats: bool, debug: bool):
     with TelegramClient(
@@ -35,28 +55,16 @@ def cli(channel: str, list_chats: bool, debug: bool):
         auto_reconnect=True,
     ) as client:
 
-        selected_chat = False
         # grab channels
-        for d in client.iter_dialogs(archived=False):
-            if list_chats:
-                print(d.name)
-                if debug:
-                    print(json.dumps(d.entity.to_dict(), default=str, indent=4))
-            # if d.entity.title == 'vlada_661':
-            if hasattr(d.entity, "title"):
-                if d.entity.title == channel:
-                    selected_chat = d
-                    break
-            else:
-                if f"{d.entity.first_name} {d.entity.last_name}" == channel:
-                    selected_chat = d
-                    break
-        if not selected_chat:
-            print(f"Chat '{channel}' not found!")
-            return False
 
+        selected_chat = select_channel(channel, client, debug, list_chats=True)
         if list_chats:
             return True
+
+        while not selected_chat:
+            channel = click.prompt("Please enter a channel")
+            selected_chat = select_channel(channel.strip(), client, debug, list_chats=False)
+
 
         for messagedata in client.iter_messages(
             entity=selected_chat.entity,
