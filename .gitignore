@@ -1,0 +1,10 @@
+.vscode
+.DS_Store
+*.session
+*.session~journal
+config.py
+
+downloads/
+venv/
+
+**/__pycache__/**
