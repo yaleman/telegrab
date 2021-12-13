@@ -55,5 +55,6 @@ exclude = [
     "*.session",
     "*.session-journal",
     "downloads/",
-    "venv/"
+    "venv/",
+    ".github/",
 ]
