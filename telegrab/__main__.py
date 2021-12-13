@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-""" telegrab
+"""
+telegrab
 
 A tool for downloading files from telegram channels.
 
@@ -20,6 +21,11 @@ Generate a session id using something like `openssl rand -hex 32` - keeping it s
 ```
 
 You specify the `download_dir` in config or on the command line (with `--download-dir`).
+
+## Session storage
+
+It'll take the "session_id" value and store session data in `~/.config/telegrab/{session_id}`
+
 """
 
 import json
@@ -29,6 +35,7 @@ import sys
 
 import click
 from telethon.sync import TelegramClient
+from telethon.sessions import SQLiteSession
 
 
 def download_callback(recvbytes: int, total: int):
@@ -111,6 +118,16 @@ def check_download_dir(config_object, downdir, debug):
     return download_dir
 
 
+def get_session(config_object):
+    """ returns a config session thing """
+    filename = os.path.expanduser(
+        f"~/.config/telegrab/{config_object.get('session_id')}"
+    )
+    if not os.path.exists(os.path.expanduser("~/.config/telegrab/")):
+        os.mkdir(os.path.expanduser("~/.config/telegrab/"))
+    return SQLiteSession(filename)
+
+
 @click.option("-d", "--debug", is_flag=True, default=False)
 @click.option("-l", "--list-chats", type=bool, is_flag=True, default=False)
 @click.option("--channel", default="")
@@ -134,7 +151,7 @@ def cli(channel: str, list_chats: bool, debug: bool, download_dir: str):
         return False
 
     with TelegramClient(
-        session=config.get("session_id"),
+        session=get_session(config),
         api_id=config.get("api_id"),
         api_hash=config.get("api_hash"),
         request_retries=5,
