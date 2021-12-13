@@ -22,4 +22,4 @@ You specify the `download_dir` in config or on the command line (with `--downloa
 
 """
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
