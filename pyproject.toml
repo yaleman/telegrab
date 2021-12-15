@@ -43,7 +43,7 @@ dev = [
 Home = "https://github.com/yaleman/telegrab"
 
 [project.scripts]
-fuckjpeg = "telegrab.__main__:cli"
+telegrab = "telegrab.__main__:cli"
 
 
 [tool.flit.sdist]
