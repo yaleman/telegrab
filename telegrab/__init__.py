@@ -25,5 +25,3 @@ You specify the `download_dir` in config or on the command line (with `--downloa
 It'll take the "session_id" value and store session data in `~/.config/telegrab/{session_id}`
 
 """
-
-__version__ = "0.0.5"
