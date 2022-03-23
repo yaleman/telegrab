@@ -1,21 +1,24 @@
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = [
+    "poetry-core>=1.0.0",
+]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "telegrab"
 version = "0.0.6"
 description = "A tool for downloading files from Telegram."
-authors = ["James Hodgkinson <james@terminaloutcomes.com>"]
+authors = [
+    "James Hodgkinson <james@terminaloutcomes.com>",
+]
 license = "MIT"
-
 keywords = [
     "download",
     "telegram",
     "images",
     "image",
     "jpeg",
-    "jpg"
+    "jpg",
 ]
 
 [tool.poetry.dependencies]
@@ -33,7 +36,25 @@ black = "^22.1.0"
 mypy = "^0.941"
 pylint-pydantic = "^0.1.4"
 
-[project.scripts]
-telegrab = "telegrab.__main__:cli"
 [tool.poetry.scripts]
+telegrab = "telegrab.__main__:cli"
+
+[project]
+name = "telegrab"
+description = "A tool for downloading files from Telegram."
+license = "MIT"
+version = "0.0.6"
+keywords = [
+    "download",
+    "telegram",
+    "images",
+    "image",
+    "jpeg",
+    "jpg",
+]
+authors = [
+    { name = "James Hodgkinson", email = "james@terminaloutcomes.com" },
+]
+
+[project.scripts]
 telegrab = "telegrab.__main__:cli"
