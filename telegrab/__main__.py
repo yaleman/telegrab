@@ -45,7 +45,7 @@ from .types import ConfigObject
 def download_callback(recvbytes: int, total: int) -> None:
     """ callback to print status of the download as it happens """
     status = round(100 * (recvbytes / total), 2)
-    logger.debug(f"Downloading {total} bytes - {status}%")
+    logger.info(f"Downloading {total} bytes - {status}%")
 
 def select_channel(
     channel_name: str,
@@ -205,14 +205,10 @@ def cli(
                 if download_filename.exists():
                     if not debug:
                         continue
-                    if (
-                        input(
-                            f"Filename already exists: {download_filename}, do you want to try message id based option? "
-                        )
-                        .strip()
-                        .lower()
-                        == "y"
-                    ):
+
+                    user_response =  questionary.text(
+                            f"Filename already exists: {download_filename}, do you want to try message id based option? ").ask()
+                    if user_response is not None and user_response.strip().lower() == "y":
                         download_filename = Path(f"{download_path}/{message.get('id')}-{filename}").expanduser().resolve()
                         if download_filename.exists():
                             logger.debug(f"Skipping {filename}")
@@ -228,6 +224,7 @@ def cli(
                         file=download_filename,
                         progress_callback=download_callback,
                     )
+                    logger.success("Successfully downloaded {}", download_filename)
                 except KeyboardInterrupt:
                     logger.warning(f"You interrupted this, removing {download_filename}")
                     download_filename.unlink()
