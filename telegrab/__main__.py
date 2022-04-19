@@ -131,7 +131,7 @@ def get_chat(
             ]
         # prompt the user for a channel
         selected_chat = questionary.select(
-            "What do you want to do?",
+            "Please select a channel to grab:",
             choices=choices).ask()
     return selected_chat
 
