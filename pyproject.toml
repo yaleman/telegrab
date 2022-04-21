@@ -30,7 +30,7 @@ pydantic = "^1.9.0"
 loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
-pylint = "^2.12.2"
+pylint = "^2.13.7"
 pytest = "^7.1.1"
 black = "^22.3.0"
 mypy = "^0.941"
