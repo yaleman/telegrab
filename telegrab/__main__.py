@@ -41,11 +41,7 @@ from telethon.sessions import SQLiteSession #type: ignore
 from telethon.tl.types import Dialog #type: ignore
 
 from .types import ConfigObject
-
-def download_callback(recvbytes: int, total: int) -> None:
-    """ callback to print status of the download as it happens """
-    status = round(100 * (recvbytes / total), 2)
-    logger.info(f"Downloading {total} bytes - {status}%")
+from . import process_message
 
 def select_channel(
     channel_name: str,
@@ -184,54 +180,10 @@ def cli(
         for messagedata in client.iter_messages(
             entity=selected_chat.entity,
         ):
-            message = messagedata.to_dict()
+            process_message(
+                client, debug, download_path, messagedata
+            )
 
-            if message.get("media"):
-                media = message.get("media")
-                logger.debug("Found an image")
-                attributes = media.get("document", {}).get("attributes", {})
-                filename = False
-                for att in attributes:
-                    if att.get("_") == "DocumentAttributeFilename":
-                        filename = att.get("file_name")
-                        break
-                if not filename:
-                    logger.debug(f"Couldn't find a filename? is post: {message.get('post')}")
-                    logger.debug("Dumping data:")
-                    logger.debug(json.dumps(message, default=str))
-                    continue
-                logger.debug(f"Filename: {filename}")
-                download_filename = Path(f"{download_path}/{filename}").expanduser().resolve()
-                if download_filename.exists():
-                    if not debug:
-                        continue
-
-                    user_response =  questionary.text(
-                            f"Filename already exists: {download_filename}, do you want to try message id based option? ").ask()
-                    if user_response is not None and user_response.strip().lower() == "y":
-                        download_filename = Path(f"{download_path}/{message.get('id')}-{filename}").expanduser().resolve()
-                        if download_filename.exists():
-                            logger.debug(f"Skipping {filename}")
-                            continue
-                    else:
-                        logger.debug("Skipped")
-                        continue
-
-                try:
-                    logger.info("Downloading {}", download_filename)
-                    client.download_media(
-                        message=messagedata,
-                        file=download_filename,
-                        progress_callback=download_callback,
-                    )
-                    logger.success("Successfully downloaded {}", download_filename)
-                except KeyboardInterrupt:
-                    logger.warning(f"You interrupted this, removing {download_filename}")
-                    download_filename.unlink()
-                    sys.exit()
-
-            if debug:
-                logger.debug(json.dumps(message, indent=4, default=str))
     return True
 
 if __name__ == "__main__":

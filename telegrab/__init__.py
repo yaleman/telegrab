@@ -25,3 +25,70 @@ You specify the `download_dir` in config or on the command line (with `--downloa
 It'll take the "session_id" value and store session data in `~/.config/telegrab/{session_id}`
 
 """
+
+import json
+from pathlib import Path
+import sys
+from typing import Any, Dict
+
+from loguru import logger
+import questionary
+from telethon.sync import TelegramClient #type: ignore
+
+
+def download_callback(recvbytes: int, total: int) -> None:
+    """ callback to print status of the download as it happens """
+    status = round(100 * (recvbytes / total), 2)
+    logger.info(f"Downloading {total} bytes - {status}%")
+
+def process_message(
+    client: TelegramClient,
+    debug: bool,
+    download_path: Path,
+    messagedata: Any,
+    ) -> None:
+    """ handles an individual message """
+    message: Dict[str, Any] = messagedata.to_dict()
+    if "media" in message:
+        media = message["media"]
+        logger.debug("Found an image")
+        attributes = media.get("document", {}).get("attributes", {})
+        filename = False
+        for att in attributes:
+            if att.get("_") == "DocumentAttributeFilename":
+                filename = att.get("file_name")
+                break
+        if not filename:
+            logger.debug(f"Couldn't find a filename? is post: {message.get('post')}")
+            logger.debug("Dumping data:")
+            logger.debug(json.dumps(message, default=str))
+            return
+        logger.debug(f"Filename: {filename}")
+        download_filename = Path(f"{download_path}/{filename}").expanduser().resolve()
+        if download_filename.exists():
+            if not debug:
+                return
+
+            user_response =  questionary.text(
+                    f"Filename already exists: {download_filename}, do you want to try message id based option? ").ask()
+            if user_response is not None and user_response.strip().lower() == "y":
+                download_filename = Path(f"{download_path}/{message.get('id')}-{filename}").expanduser().resolve()
+                if download_filename.exists():
+                    logger.debug(f"Skipping {filename}")
+                    return
+            else:
+                logger.debug("Skipped")
+                return
+
+        try:
+            logger.info("Downloading {}", download_filename)
+            client.download_media(
+                message=messagedata,
+                file=download_filename,
+                progress_callback=download_callback,
+            )
+            logger.success("Successfully downloaded {}", download_filename)
+        except KeyboardInterrupt:
+            logger.warning(f"You interrupted this, removing {download_filename}")
+            download_filename.unlink()
+            sys.exit()
