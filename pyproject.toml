@@ -31,7 +31,7 @@ loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.13.7"
-pytest = "^7.1.1"
+pytest = "^7.1.2"
 black = "^22.3.0"
 mypy = "^0.942"
 pylint-pydantic = "^0.1.4"
