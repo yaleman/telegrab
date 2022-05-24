@@ -49,10 +49,22 @@ def process_message(
     ) -> None:
     """ handles an individual message """
     message: Dict[str, Any] = messagedata.to_dict()
-    if "media" in message:
+    if "media" in message and message["media"] is not None:
         media = message["media"]
         logger.debug("Found an image")
-        attributes = media.get("document", {}).get("attributes", {})
+        if "document" not in media:
+            logger.error(
+                "Couldn't find 'document' field in media message, dumping: \n{}",
+                json.dumps(media, default=str, indent=4),
+                )
+            return
+        if "attributes" not in media["document"]:
+            logger.error(
+                "Couldn't find document 'attributes' field in media message, dumping: \n{}",
+                json.dumps(media, default=str, indent=4),
+                )
+            return
+        attributes = media["document"]["attributes"]
         filename = False
         for att in attributes:
             if att.get("_") == "DocumentAttributeFilename":
