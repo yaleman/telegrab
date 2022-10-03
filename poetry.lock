@@ -345,7 +345,7 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "Telethon"
-version = "1.25.1"
+version = "1.25.2"
 description = "Full-featured Telegram client library for Python 3"
 category = "main"
 optional = false
@@ -638,8 +638,8 @@ rsa = [
     {file = "rsa-4.8.tar.gz", hash = "sha256:5c6bd9dc7a543b7fe4304a631f8a8a3b674e2bbfc49c2ae96200cdbe55df6b17"},
 ]
 Telethon = [
-    {file = "Telethon-1.25.1-py3-none-any.whl", hash = "sha256:3a6c89fb3108cbc6872a5056ad3dddd0895825f9b08a549216f35f231ac2e611"},
-    {file = "Telethon-1.25.1.tar.gz", hash = "sha256:06edc1852ae0eacef6f598b96638cf1fbd30e505bd314268ff762eaf3c1d550f"},
+    {file = "Telethon-1.25.2-py3-none-any.whl", hash = "sha256:9806fe57c2452be1ffc468fe0924e7c8ba3f6bd43504a6c094cbd259fbcad091"},
+    {file = "Telethon-1.25.2.tar.gz", hash = "sha256:a63da7a456727ffb0cac6b385563e57c4863d2b64fff58f9fa28ce188142b238"},
 ]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
