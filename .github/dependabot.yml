@@ -4,6 +4,13 @@ updates:
   directory: /
   schedule:
     interval: weekly
-    day: monday
-    time: "00:00"
-    timezone: Etc/UTC
+    day: saturday
+    time: "02:00"
+    timezone: "Australia/Brisbane"
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+    day: saturday
+    time: "02:00"
+    timezone: "Australia/Brisbane"
