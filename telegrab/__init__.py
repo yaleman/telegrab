@@ -29,12 +29,14 @@ It'll take the "session_id" value and store session data in `~/.config/telegrab/
 import json
 from pathlib import Path
 import sys
-from typing import Any, Dict
-
+from typing import Any, Dict, Optional
+import asyncio.exceptions
 from loguru import logger
 import questionary
 from telethon.sync import TelegramClient #type: ignore
 
+class BailOut(Exception):
+    """ bailing out """
 
 def download_callback(recvbytes: int, total: int) -> None:
     """ callback to print status of the download as it happens """
@@ -46,16 +48,24 @@ def process_message(
     debug: bool,
     download_path: Path,
     messagedata: Any,
+    search: Optional[str],
     ) -> None:
     """ handles an individual message """
     message: Dict[str, Any] = messagedata.to_dict()
+    if search is not None:
+        if search.lower() not in str(message).lower():
+            logger.debug("Skipping this one, doesn't match search")
+            return
+    if 'reactions' in message:
+        del message['reactions']
     if "media" in message and message["media"] is not None:
         media = message["media"]
         logger.debug("Found an image")
+        logger.debug(json.dumps(message, default=str, indent=4))
         if "document" not in media:
             logger.error(
                 "Couldn't find 'document' field in media message, dumping: \n{}",
-                json.dumps(media, default=str, indent=4),
+                json.dumps(message, default=str, indent=4),
                 )
             return
         if "attributes" not in media["document"]:
@@ -93,14 +103,24 @@ def process_message(
                 return
 
         try:
-            logger.info("Downloading {}", download_filename)
-            client.download_media(
-                message=messagedata,
-                file=download_filename,
-                progress_callback=download_callback,
-            )
-            logger.success("Successfully downloaded {}", download_filename)
+            confirmation = questionary.confirm(f"Download {filename}?").ask()
+            if confirmation:
+                logger.info("Downloading {}", download_filename)
+
+                try:
+                    client.download_media(
+                        message=messagedata,
+                        file=download_filename,
+                        progress_callback=download_callback,
+                    )
+                except asyncio.exceptions.IncompleteReadError:
+                    pass
+                logger.success("Successfully downloaded {}", download_filename)
+            elif confirmation is None:
+                raise BailOut
         except KeyboardInterrupt:
             logger.warning(f"You interrupted this, removing {download_filename}")
             download_filename.unlink()
             sys.exit()
+    else:
+        logger.debug(json.dumps(message, indent=4, default=str))

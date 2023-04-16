@@ -41,7 +41,7 @@ from telethon.sessions import SQLiteSession #type: ignore
 from telethon.tl.types import Dialog #type: ignore
 
 from .types import ConfigObject
-from . import process_message
+from . import BailOut, process_message
 
 def select_channel(
     channel_name: str,
@@ -51,7 +51,7 @@ def select_channel(
     selected_chat = False
 
     for dialog in telegram_client.iter_dialogs(archived=False):
-        logger.debug(json.dumps(dialog.entity.to_dict(), default=str, indent=4))
+        logger.debug("Channel info: {}", json.dumps(dialog.entity.to_dict(), default=str, indent=4))
         if hasattr(dialog.entity, "title"):
             if dialog.entity.title == channel_name:
                 selected_chat = dialog
@@ -121,7 +121,7 @@ def get_chat(
 
     if selected_chat is None:
         # build a list of choices
-        choices: List[questionary.Choice] = [ questionary.Choice(title=dialog.name,value=dialog)
+        choices: List[questionary.Choice] = [ questionary.Choice(title=f"'{dialog.name}'",value=dialog)
             for dialog in
             client.iter_dialogs(archived=False)
             ]
@@ -132,6 +132,7 @@ def get_chat(
     return selected_chat
 
 @click.option("-d", "--debug", is_flag=True, default=False)
+@click.option("-s", "--search", help="Search string")
 @click.option("-l", "--list-chats", type=bool, is_flag=True, default=False)
 @click.option("--channel", help="Which channel to pull from")
 @click.option(
@@ -148,6 +149,7 @@ def cli(
     list_chats: bool=False,
     debug: bool=False,
     download_dir: Optional[Path]=None,
+    search: Optional[str]=None,
     ) -> bool:
     """ main cli interface """
     config = load_config()
@@ -176,13 +178,16 @@ def cli(
         if selected_chat is None:
             logger.error("Couldn't select a chat, bailing!")
             return False
-
-        for messagedata in client.iter_messages(
-            entity=selected_chat.entity,
-        ):
-            process_message(
-                client, debug, download_path, messagedata
-            )
+        try:
+            for messagedata in client.iter_messages(
+                entity=selected_chat.entity,
+            ):
+                process_message(
+                    client, debug, download_path, messagedata, search,
+                )
+        except BailOut:
+            logger.error("Bailing out!")
+            return True
 
     return True
 
