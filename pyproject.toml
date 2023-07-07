@@ -34,7 +34,7 @@ pylint = "^2.15.5"
 pytest = "^7.2.0"
 black = "^23.1.0"
 mypy = "^1.0"
-pylint-pydantic = "^0.1.4"
+pylint-pydantic = "^0.2.0"
 
 [tool.poetry.scripts]
 telegrab = "telegrab.__main__:cli"
