@@ -7,5 +7,5 @@ class ConfigObject(BaseModel):
     """ configuration loader """
     session_id: str
     api_hash: str
-    api_id: str
-    download_dir: Optional[str]
+    api_id: int
+    download_dir: Optional[str] = None

@@ -29,11 +29,11 @@ It'll take the "session_id" value and store session data in `~/.config/telegrab/
 import json
 from pathlib import Path
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from loguru import logger
 import questionary
-from telethon.sync import TelegramClient #type: ignore
+from telethon.sync import TelegramClient
 
 
 def download_callback(recvbytes: int, total: int) -> None:
@@ -94,9 +94,10 @@ def process_message(
 
         try:
             logger.info("Downloading {}", download_filename)
-            client.download_media(
+            sync_client = cast(Any, client)
+            sync_client.download_media(
                 message=messagedata,
-                file=download_filename,
+                file=str(download_filename),
                 progress_callback=download_callback,
             )
             logger.success("Successfully downloaded {}", download_filename)

@@ -36,9 +36,9 @@ from typing import List, Optional
 import click
 from loguru import logger
 import questionary
-from telethon.sync import TelegramClient #type: ignore
-from telethon.sessions import SQLiteSession #type: ignore
-from telethon.tl.types import Dialog #type: ignore
+from telethon.sync import TelegramClient
+from telethon.sessions import SQLiteSession
+from telethon.tl.custom.dialog import Dialog
 
 from .types import ConfigObject
 from . import process_message
@@ -46,9 +46,9 @@ from . import process_message
 def select_channel(
     channel_name: str,
     telegram_client: TelegramClient,
-) -> Dialog:
+) -> Optional[Dialog]:
     """ selects a dialog by name """
-    selected_chat = False
+    selected_chat: Optional[Dialog] = None
 
     for dialog in telegram_client.iter_dialogs(archived=False):
         logger.debug(json.dumps(dialog.entity.to_dict(), default=str, indent=4))
@@ -70,7 +70,7 @@ def load_config() -> Optional[ConfigObject]:
     if not config_filename.exists():
         logger.error(f"Unable to find config file, looked in : {config_filename}")
         return None
-    config = ConfigObject.parse_file(config_filename)
+    config = ConfigObject.model_validate_json(config_filename.read_text())
     return config
 
 def check_download_dir(
@@ -113,11 +113,13 @@ def get_chat(
     ) -> Optional[Dialog]:
     """ figure out which `Dialog` we're looking at"""
     selected_chat: Optional[Dialog] = None
+    if list_chats:
+        for dialog in client.iter_dialogs(archived=False):
+            logger.info("{}", dialog.name)
+        return None
     # grab channels
     if channel is not None:
         selected_chat = select_channel(channel, client)
-        if list_chats:
-            return True
 
     if selected_chat is None:
         # build a list of choices
@@ -164,7 +166,7 @@ def cli(
 
     with TelegramClient(
         session=get_session(config),
-        api_id=config.api_id,
+        api_id=int(config.api_id),
         api_hash=config.api_hash,
         request_retries=5,
         connection_retries=5,
@@ -173,6 +175,8 @@ def cli(
     ) as client:
 
         selected_chat = get_chat(client=client, channel=channel, list_chats=list_chats)
+        if list_chats:
+            return True
         if selected_chat is None:
             logger.error("Couldn't select a chat, bailing!")
             return False

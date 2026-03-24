@@ -11,15 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.9'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
       - name: Running tests
         run: |
-            python -m pip install --quiet --no-cache-dir --upgrade poetry
-            poetry install
-            poetry run pylint $(basename $(pwd))
-            poetry run pylint test*.py
+            uv sync --frozen --group dev
+            uv run pylint $(basename $(pwd))
+            uv run pylint test*.py
