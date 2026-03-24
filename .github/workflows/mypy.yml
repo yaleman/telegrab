@@ -16,4 +16,4 @@ jobs:
       - name: Running mypy
         run: |
           uv sync --frozen --group dev
-          uv run mypy $(basename $(pwd)) test*.py
+          uv run ty check
