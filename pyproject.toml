@@ -22,11 +22,9 @@ dependencies = [
 telegrab = "telegrab.__main__:cli"
 
 [dependency-groups]
-dev = [
-    "pylint>=3.0.1",          #toml reflow avoider
+dev = [          #toml reflow avoider
     "pytest>=8.0.0",
     "mypy>=1.0",
-    "pylint-pydantic>=0.3.0",
     "ty>=0.0.24",
     "ruff>=0.15.7",
 ]

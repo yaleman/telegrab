@@ -144,7 +144,6 @@ def get_chat(
     ),
 )
 @click.command()
-# pylint: disable=too-many-branches
 def cli(
     channel: Optional[str]=None,
     list_chats: bool=False,

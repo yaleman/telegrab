@@ -16,5 +16,4 @@ jobs:
       - name: Running tests
         run: |
             uv sync --frozen --group dev
-            uv run pylint $(basename $(pwd))
-            uv run pylint test*.py
+            uv run ruff check telegrab test_telegrab.py
