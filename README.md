@@ -22,4 +22,3 @@ You specify the `download_dir` in config or on the command line (with `--downloa
 ## Session storage
 
 It'll take the "session_id" value and store session data in `~/.config/telegrab/{session_id}`
-
