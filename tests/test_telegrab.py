@@ -1,10 +1,8 @@
 import asyncio
-from datetime import datetime
-from types import SimpleNamespace
 
 import telegrab as tg
 import telegrab.__main__ as cli
-from telegrab.types import ConfigObject, FakeChatClient
+from telegrab.types import ConfigObject, FakeChatClient, FakeMessage
 
 
 class FakeDialog:
@@ -42,7 +40,7 @@ class FakeInnerClient:
     async def connect(self):
         self.connect_called = True
 
-    async def start(self):
+    def start(self):
         self.start_called = True
         return self
 
@@ -52,35 +50,6 @@ class FakeInnerClient:
     async def iter_messages(self, entity):
         if False:
             yield entity
-
-
-class FakeMessage:
-    def __init__(
-        self,
-        *,
-        media,
-        message_dict,
-        message_id=1,
-        chat_title="alpha",
-        chat_id=101,
-        date=None,
-        post=False,
-    ):
-        self.media = media
-        self._message_dict = message_dict
-        self.id = message_id
-        self.chat_id = chat_id
-        self.chat = SimpleNamespace(title=chat_title)
-        self.date = date or datetime(2024, 1, 2, 3, 4, 5)
-        self.post = post
-        self.downloads = []
-
-    def to_dict(self):
-        return self._message_dict
-
-    async def download_media(self, file, progress_callback):
-        self.downloads.append(file)
-        return file
 
 
 def test_get_chat_awaits_async_prompt(monkeypatch):
@@ -194,7 +163,7 @@ def test_process_message_downloads_photo_messages(monkeypatch, tmp_path):
         chat_id=555,
     )
 
-    asyncio.run(tg.process_message(object(), False, tmp_path, message))
+    asyncio.run(tg.process_message(FakeChatClient([]), False, tmp_path, message))
 
     assert len(message.downloads) == 1
     assert message.downloads[0].endswith("photos (555)/20240102_030405_77.jpg")
@@ -219,7 +188,7 @@ def test_process_message_downloads_video_documents(monkeypatch, tmp_path):
         message_id=88,
     )
 
-    asyncio.run(tg.process_message(object(), False, tmp_path, message))
+    asyncio.run(tg.process_message(FakeChatClient([]), False, tmp_path, message))
 
     assert len(message.downloads) == 1
     assert message.downloads[0].endswith("clip.mp4")
@@ -247,7 +216,7 @@ def test_process_message_skips_stickers_with_info_log(monkeypatch, tmp_path):
         message_id=89,
     )
 
-    asyncio.run(tg.process_message(object(), False, tmp_path, message))
+    asyncio.run(tg.process_message(FakeChatClient([]), False, tmp_path, message))
 
     assert message.downloads == []
     assert any("Skipping sticker message" in entry for entry in logs)

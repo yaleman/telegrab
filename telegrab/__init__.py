@@ -26,16 +26,19 @@ It'll take the "session_id" value and store session data in `~/.config/telegrab/
 
 """
 
+from telethon import TelegramClient
+
+from telegrab.types import FakeMessage, FakeChatClient
+
 from telethon.tl.custom.message import Message
 from telethon.tl.types import MessageMediaPhoto
+from telethon.errors import FloodWaitError
 from pathlib import Path
 import sys
-from typing import Any, Dict
+import asyncio
 
 from loguru import logger
 import questionary
-from telethon.sync import TelegramClient
-
 from .interactive import has_interactive_terminal
 
 
@@ -45,14 +48,29 @@ def download_callback(recvbytes: int, total: int) -> None:
     logger.info(f"Downloading {total} bytes - {status}%")
 
 
+async def _download_with_retries(
+    message: Message | FakeMessage, download_path: Path
+) -> None:
+    while True:
+        try:
+            await message.download_media(
+                file=str(download_path), progress_callback=download_callback
+            )
+            return
+        except FloodWaitError as error:
+            logger.warning(f"Rate limit hit, sleeping for {error.seconds} seconds")
+            await asyncio.sleep(error.seconds)
+
+
 async def process_message(
-    client: TelegramClient,
+    client: TelegramClient | FakeChatClient,
     debug: bool,
     download_path: Path,
-    messagedata: Message,
+    messagedata: Message | FakeMessage,
+    dry_run: bool = False,
 ) -> None:
     """handles an individual message"""
-    message_dict: Dict[str, Any] = messagedata.to_dict()
+    message_dict = messagedata.to_dict()
     media = message_dict.get("media")
     action = message_dict.get("action")
 
@@ -75,13 +93,17 @@ async def process_message(
         logger.debug("Found a photo message: {} filename: {}", messagedata.id, filename)
         file_path = download_path / filename
         if not file_path.parent.exists():
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            if not dry_run:
+                file_path.parent.mkdir(parents=True, exist_ok=True)
         if file_path.exists():
             logger.info("File already exists: {}, skipping download.", file_path)
             return
-        await messagedata.download_media(
-            file=str(file_path), progress_callback=download_callback
-        )
+
+        if dry_run:
+            logger.info("Dry run: Skipping download of {}", file_path)
+            return
+
+        await _download_with_retries(messagedata, file_path)
         logger.success("Successfully downloaded {}", file_path)
         return
 
@@ -175,12 +197,13 @@ async def process_message(
             logger.debug("Skipped")
             return
 
+    if dry_run:
+        logger.info("Dry run: Skipping download of {}", download_filename)
+        return
+
     try:
         logger.info("Downloading {}", download_filename)
-        await messagedata.download_media(
-            file=str(download_filename),
-            progress_callback=download_callback,
-        )
+        await _download_with_retries(messagedata, download_filename)
         logger.success("Successfully downloaded {}", download_filename)
     except KeyboardInterrupt:
         logger.warning(f"You interrupted this, removing {download_filename}")

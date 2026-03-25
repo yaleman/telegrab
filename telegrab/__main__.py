@@ -29,6 +29,7 @@ It'll take the "session_id" value and store session data in `~/.config/telegrab/
 """
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 
 import json
 from pathlib import Path
@@ -39,6 +40,7 @@ import click
 from loguru import logger
 import questionary
 from telethon import TelegramClient
+from telethon.errors import FloodWaitError
 from telethon.sessions import SQLiteSession
 from telethon.tl.custom.dialog import Dialog
 
@@ -214,6 +216,8 @@ async def inner(
     list_chats: bool,
     debug: bool,
     download_path: Optional[Path],
+    dry_run: bool = False,
+    min_date: Optional[datetime] = None,
 ) -> bool:
     download_path = await check_download_dir(
         config_object=config, download_dir=download_path
@@ -231,7 +235,7 @@ async def inner(
         auto_reconnect=True,
     )
     await client.connect()
-    await client.start()
+    client.start()
 
     if all_channels:
         channels_to_process: list[Dialog] = []
@@ -254,10 +258,26 @@ async def inner(
             "Selected chat: {} starting to process messages...",
             json.dumps(current_chat.id, default=str, indent=4),
         )
-        async for messagedata in client.iter_messages(
-            entity=current_chat.entity,
-        ):
-            await process_message(client, debug, download_path, messagedata)
+        try:
+            async for messagedata in client.iter_messages(
+                entity=current_chat.entity,
+            ):
+                if min_date is not None:
+                    if messagedata.date is not None and messagedata.date < min_date:
+                        logger.info(
+                            "Reached message limit (date), stopping for this channel."
+                        )
+                        break
+                await process_message(
+                    client, debug, download_path, messagedata, dry_run=dry_run
+                )
+        except FloodWaitError as e:
+            logger.warning(
+                f"Rate limit hit during message iteration, sleeping for {e.seconds} seconds"
+            )
+            await asyncio.sleep(e.seconds)
+            # We can't easily resume the iterator from the same spot without complexity.
+            logger.error("Stopping processing for this channel due to rate limit.")
 
     return True
 
@@ -280,6 +300,11 @@ async def inner(
         exists=False, allow_dash=False, writable=True, file_okay=False, dir_okay=True
     ),
 )
+@click.option("--dry-run", is_flag=True, default=False, help="Simulate download")
+@click.option(
+    "--since", help="Process messages since this ISO 8601 date (e.g. 2023-01-01)"
+)
+@click.option("--days", type=int, help="Process messages from the last X days")
 @click.command()
 def cli(
     all_channels: Optional[bool] = False,
@@ -288,6 +313,9 @@ def cli(
     list_chats: bool = False,
     debug: bool = False,
     download_dir: Optional[Path] = None,
+    dry_run: bool = False,
+    since: Optional[str] = None,
+    days: Optional[int] = None,
 ) -> bool:
     """main cli interface"""
     config = load_config()
@@ -298,6 +326,21 @@ def cli(
         logger.remove()
         logger.add(sys.stderr, level="INFO")
 
+    min_date = None
+    if since:
+        try:
+            # Basic ISO parsing
+            min_date = datetime.fromisoformat(since)
+            if min_date.tzinfo is None:
+                min_date = min_date.replace(tzinfo=timezone.utc)
+        except ValueError:
+            logger.error(
+                "Invalid date format for --since. Please use ISO 8601 (e.g. 2023-01-01)"
+            )
+            return False
+    elif days:
+        min_date = datetime.now(timezone.utc) - timedelta(days=days)
+
     return asyncio.run(
         inner(
             config,
@@ -307,6 +350,8 @@ def cli(
             list_chats,
             debug,
             download_dir,
+            dry_run=dry_run,
+            min_date=min_date,
         )
     )
 
