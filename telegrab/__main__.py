@@ -235,7 +235,7 @@ async def inner(
         auto_reconnect=True,
     )
     await client.connect()
-    client.start()
+    await client.start()
 
     if all_channels:
         channels_to_process: list[Dialog] = []

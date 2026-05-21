@@ -77,7 +77,7 @@ async def test_filtering_min_date(tmp_path):
 
     client_mock = MagicMock()
     client_mock.connect = AsyncMock()
-    client_mock.start = MagicMock()
+    client_mock.start = AsyncMock()
 
     async def iter_messages(entity):
         for m in messages:
@@ -125,3 +125,38 @@ async def test_filtering_min_date(tmp_path):
 
         assert mock_process.call_count == 1
         assert mock_process.call_args[0][3] == msg1
+
+
+@pytest.mark.asyncio
+async def test_inner_awaits_client_start(tmp_path):
+    client_mock = MagicMock()
+    client_mock.connect = AsyncMock()
+    client_mock.start = AsyncMock()
+
+    async def iter_dialogs(archived=False):
+        if False:
+            yield archived
+
+    client_mock.iter_dialogs = iter_dialogs
+
+    config = ConfigObject(
+        session_id="s", api_hash="h", api_id=1, download_dir=str(tmp_path)
+    )
+
+    with (
+        patch("telegrab.__main__.TelegramClient", return_value=client_mock),
+        patch("telegrab.__main__.get_session"),
+        patch("telegrab.__main__.check_download_dir", return_value=tmp_path),
+    ):
+        await inner(
+            config,
+            all_channels=True,
+            channel=None,
+            channel_id=None,
+            list_chats=False,
+            debug=False,
+            download_path=None,
+        )
+
+    client_mock.connect.assert_awaited_once()
+    client_mock.start.assert_awaited_once()

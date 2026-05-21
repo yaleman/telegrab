@@ -40,7 +40,7 @@ class FakeInnerClient:
     async def connect(self):
         self.connect_called = True
 
-    def start(self):
+    async def start(self):
         self.start_called = True
         return self
 
