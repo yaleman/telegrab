@@ -234,8 +234,8 @@ async def inner(
         retry_delay=30,
         auto_reconnect=True,
     )
-    await client.connect()
-    await client.start()
+    # something weird in the typing of the return, meh
+    await client.start()  # ty:ignore[invalid-await]
 
     if all_channels:
         channels_to_process: list[Dialog] = []
