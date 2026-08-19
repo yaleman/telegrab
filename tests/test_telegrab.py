@@ -9,12 +9,12 @@ class FakeDialog:
     def __init__(self, name: str, dialog_id: int = 1, archived: bool = False):
         self.name = name
         self.id = dialog_id
-        self.is_archived = archived
+        self.archived = archived
         self.entity = object()
         self.draft = None
 
     def to_dict(self):
-        return {"name": self.name, "id": self.id, "is_archived": self.is_archived}
+        return {"name": self.name, "id": self.id, "archived": self.archived}
 
 
 class AsyncPrompt:

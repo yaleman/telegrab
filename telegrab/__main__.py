@@ -29,24 +29,23 @@ It'll take the "session_id" value and store session data in `~/.config/telegrab/
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-
 import json
-from pathlib import Path
 import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import List, Optional
 
 import click
-from loguru import logger
 import questionary
+from loguru import logger
 from telethon import TelegramClient
 from telethon.errors import FloodWaitError
 from telethon.sessions import SQLiteSession
 from telethon.tl.custom.dialog import Dialog
 
-from .types import ConfigObject, FakeChatClient
 from . import process_message
 from .interactive import has_interactive_terminal
+from .types import ConfigObject, FakeChatClient
 
 
 async def get_channel_by_id(
@@ -162,7 +161,7 @@ async def get_chat(
         async for dialog in client.iter_dialogs(archived=False):
             dialog: Dialog = dialog
             msg = f"{dialog.name} (id: {dialog.id})"
-            if dialog.is_archived:
+            if dialog.archived:
                 msg += " [archived]"
             logger.info(msg)
         return None
